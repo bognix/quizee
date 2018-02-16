@@ -3,12 +3,45 @@ service: hello-world
 provider:
   name: aws
   runtime: nodejs6.10
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource:
+        - { "Fn::GetAtt": ["QuizQuestions", "Arn" ] }
+  environment:
+    NAMES_TABLE: { "Ref": "QuizQuestions" }
 
 functions:
-  hello:
-    handler: handler.hello
+  saveQuestion:
+    handler: handler.saveQuestion
     events:
       - http:
-          path: hello-world
+          path: question
+          method: post
+          cors: true
+  getQuestion:
+    handler: handler.getQuestion
+    events:
+      - http:
+          path: question
           method: get
           cors: true
+
+resources:
+  Resources:
+    QuizQuestions:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          -
+            AttributeName: id
+            AttributeType: S
+        KeySchema:
+          -
+            AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
